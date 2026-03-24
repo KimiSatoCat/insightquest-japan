@@ -1,72 +1,267 @@
-"use client";
+import WorkflowStrip from "../../features/signals/components/WorkflowStrip";
+import { WORKFLOW_STRIP_PRESETS } from "../../features/signals/config/workflowStripPresets";
+import type { Metadata } from "next";
+import Link from "next/link";
+import BookmarksTray from "../../features/signals/components/BookmarksTray";
+import CompareTray from "../../features/signals/components/CompareTray";
+import DashboardInsights from "../../features/signals/components/DashboardInsights";
+import DashboardOverview from "../../features/signals/components/DashboardOverview";
+import FacilityCard from "../../features/signals/components/FacilityCard";
+import FeaturedStayRail from "../../features/signals/components/FeaturedStayRail";
+import NotesTray from "../../features/signals/components/NotesTray";
+import PresetFilter from "../../features/signals/components/PresetFilter";
+import RegionFilter from "../../features/signals/components/RegionFilter";
+import SearchControls from "../../features/signals/components/SearchControls";
+import ShareViewBar from "../../features/signals/components/ShareViewBar";
+import StayTypeFilter from "../../features/signals/components/StayTypeFilter";
+import { getAllStays } from "../../features/signals/lib/allStays";
+import {
+getRegionLabel,
+  getStayTypeLabel,
+} from "../../features/signals/lib/momentum";
+import {
+  getSignalsDashboardData,
+  getStaysBySlugs,
+} from "../../features/signals/lib/repository";
+import {
+  addCompareSlug,
+  buildSignalsHref,
+  getPresetLabel,
+  getSortLabel,
+  normalizeCompareParam,
+  normalizePresetParam,
+  normalizeRegionParam,
+  normalizeSearchQuery,
+  normalizeSortParam,
+  normalizeStayTypeParam,
+  removeCompareSlug,
+} from "../../features/signals/lib/selectors";
 
-import { useMemo, useState } from "react";
-import type { Region } from "../../lib/types";
-import { getFacilities, getMomentumEntries } from "../../lib/facilities";
-import { findMomentum } from "../../lib/momentum";
-import RegionFilter from "../../components/RegionFilter";
-import FacilityCard from "../../components/FacilityCard";
+export const metadata: Metadata = {
+  title: "Signals dashboard | Stay Signals",
+  description:
+    "Editorial stay signals across prototype properties in Japan. Compare momentum, trust, and traveler fit.",
+};
 
-const facilities = getFacilities();
-const momentumEntries = getMomentumEntries();
+type SearchParamsShape = {
+  region?: string | string[];
+  type?: string | string[];
+  q?: string | string[];
+  sort?: string | string[];
+  preset?: string | string[];
+  compare?: string | string[];
+};
 
-export default function SignalsPage() {
-  const [selectedRegion, setSelectedRegion] = useState<Region | "all">("all");
-  const [openId, setOpenId] = useState<string | null>(null);
+type PageProps = {
+  searchParams?: SearchParamsShape | Promise<SearchParamsShape>;
+};
 
-  const filtered = useMemo(() => {
-    if (selectedRegion === "all") return facilities;
-    return facilities.filter((facility) => facility.region === selectedRegion);
-  }, [selectedRegion]);
+export default async function SignalsPage({ searchParams }: PageProps) {
+  const params = await Promise.resolve(searchParams ?? {});
+  const selectedRegion = normalizeRegionParam(params.region);
+  const selectedStayType = normalizeStayTypeParam(params.type);
+  const currentQuery = normalizeSearchQuery(params.q);
+  const currentSort = normalizeSortParam(params.sort);
+  const currentPreset = normalizePresetParam(params.preset);
+  const currentCompare = normalizeCompareParam(params.compare);
 
-  const handleRegionChange = (region: Region | "all") => {
-    setSelectedRegion(region);
-    setOpenId(null);
-  };
+  const dashboardData = await getSignalsDashboardData({
+    region: selectedRegion,
+    stayType: selectedStayType,
+    q: currentQuery,
+    sort: currentSort,
+    preset: currentPreset,
+  });
 
-  const handleToggle = (id: string) => {
-    setOpenId((prev) => (prev === id ? null : id));
-  };
+  const comparedStays = await getStaysBySlugs(currentCompare);
+  const allStays = await getAllStays();
+
+  const hasActiveFilters = Boolean(
+    selectedRegion ||
+      selectedStayType ||
+      currentQuery ||
+      currentSort !== "priority" ||
+      currentPreset ||
+      currentCompare.length > 0
+  );
+
+  const scopeParts: string[] = [];
+  if (selectedRegion) scopeParts.push(getRegionLabel(selectedRegion));
+  if (selectedStayType) scopeParts.push(getStayTypeLabel(selectedStayType));
+  const scopeLabel =
+    scopeParts.length > 0 ? scopeParts.join(" / ") : "All regions / All stay types";
 
   return (
-    <div className="container dashboard-section">
-      <h1 className="dashboard-title">Signals Dashboard</h1>
-      <p className="dashboard-subtitle">
-        Filter and compare stays across Japan. Click any row to see details.
-      </p>
+    <div className="container">
+            <WorkflowStrip {...WORKFLOW_STRIP_PRESETS.dashboard} />
 
-      <RegionFilter
-        selectedRegion={selectedRegion}
-        onChange={handleRegionChange}
-      />
-
-      <p className="dashboard-subtitle" style={{ marginBottom: "0.75rem" }}>
-        Showing {filtered.length} of {facilities.length} properties
-      </p>
-
-      {filtered.length === 0 ? (
-        <p style={{ color: "#8a8580", fontSize: "0.875rem", padding: "2rem 0" }}>
-          No properties match this filter.
+      <section className="dashboard-section">
+        <h1 className="dashboard-title">Signals dashboard</h1>
+        <p className="dashboard-subtitle">
+          Editorial stay signals across prototype properties in Japan. Narrow by
+          region and stay type, then open each card to inspect the rationale.
         </p>
-      ) : (
-        filtered.map((facility) => {
-          const momentumEntry = findMomentum(
-            momentumEntries,
-            facility.region,
-            facility.stayType
-          );
 
-          return (
-            <FacilityCard
-              key={facility.id}
-              facility={facility}
-              momentumEntry={momentumEntry}
-              isOpen={openId === facility.id}
-              onToggle={() => handleToggle(facility.id)}
-            />
-          );
-        })
-      )}
+        <div className="dashboard-toolbar">
+          <div>
+            <p className="results-meta">
+              Showing {dashboardData.filteredCount} of {dashboardData.totalCount} stays
+            </p>
+            <p className="scope-meta">{scopeLabel}</p>
+            <p className="query-meta">
+              {currentQuery ? `Keyword: "${currentQuery}"` : "Keyword: none"} / Sort:{" "}
+              {getSortLabel(currentSort)} / Lens:{" "}
+              {currentPreset ? getPresetLabel(currentPreset) : "none"} / Compare:{" "}
+              {comparedStays.length}
+            </p>
+          </div>
+
+          <div className="dashboard-toolbar-actions">
+            <Link href="/signals/shortlist" className="dashboard-text-link">
+              Shortlist
+            </Link>
+
+            <Link href="/signals/bookmarks" className="dashboard-text-link">
+              Bookmarks
+            </Link>
+
+            <Link href="/signals/notes" className="dashboard-text-link">
+              Notes
+            </Link>
+
+            <Link href="/signals/methodology" className="dashboard-text-link">
+              How signals work
+            </Link>
+
+            {hasActiveFilters ? (
+              <Link href={buildSignalsHref({})} className="dashboard-reset">
+                Reset filters
+              </Link>
+            ) : null}
+          </div>
+        </div>
+
+        <ShareViewBar
+          title="Share this dashboard view"
+          description="The copied URL preserves the current filters, lens, sort order, and comparison state."
+        />
+
+        <SearchControls
+          selectedRegion={selectedRegion}
+          selectedStayType={selectedStayType}
+          currentQuery={currentQuery}
+          currentSort={currentSort}
+          currentPreset={currentPreset}
+          currentCompare={currentCompare}
+        />
+
+        <PresetFilter
+          counts={dashboardData.presetCounts}
+          totalCount={dashboardData.presetBaseCount}
+          selectedRegion={selectedRegion}
+          selectedStayType={selectedStayType}
+          selectedPreset={currentPreset}
+          currentQuery={currentQuery}
+          currentSort={currentSort}
+          currentCompare={currentCompare}
+        />
+
+        <BookmarksTray allStays={allStays} />
+
+        <NotesTray allStays={allStays} />
+
+        <CompareTray
+          stays={comparedStays}
+          selectedRegion={selectedRegion}
+          selectedStayType={selectedStayType}
+          currentQuery={currentQuery}
+          currentSort={currentSort}
+          currentPreset={currentPreset}
+          currentCompare={currentCompare}
+        />
+
+        <DashboardOverview
+          total={dashboardData.overview.total}
+          rising={dashboardData.overview.rising}
+          core={dashboardData.overview.core}
+          highTrust={dashboardData.overview.highTrust}
+        />
+
+        <DashboardInsights
+          dominantMomentum={dashboardData.insights.dominantMomentum}
+          trustWatch={dashboardData.insights.trustWatch}
+          fitFocus={dashboardData.insights.fitFocus}
+        />
+
+        <FeaturedStayRail
+          stays={dashboardData.featured}
+          selectedRegion={selectedRegion}
+          selectedStayType={selectedStayType}
+          currentQuery={currentQuery}
+          currentSort={currentSort}
+          currentPreset={currentPreset}
+          currentCompare={currentCompare}
+        />
+
+        <div className="filters-stack">
+          <RegionFilter
+            counts={dashboardData.regionCounts}
+            totalCount={
+              Object.values(dashboardData.regionCounts).reduce((sum, count) => sum + count, 0)
+            }
+            selectedRegion={selectedRegion}
+            selectedStayType={selectedStayType}
+            currentQuery={currentQuery}
+            currentSort={currentSort}
+            currentPreset={currentPreset}
+            currentCompare={currentCompare}
+          />
+
+          <StayTypeFilter
+            counts={dashboardData.stayTypeCounts}
+            totalCount={
+              Object.values(dashboardData.stayTypeCounts).reduce((sum, count) => sum + count, 0)
+            }
+            selectedRegion={selectedRegion}
+            selectedStayType={selectedStayType}
+            currentQuery={currentQuery}
+            currentSort={currentSort}
+            currentPreset={currentPreset}
+            currentCompare={currentCompare}
+          />
+        </div>
+
+        {dashboardData.filtered.length > 0 ? (
+          <div className="facility-list">
+            {dashboardData.filtered.map((stay) => {
+              const isCompared = currentCompare.includes(stay.slug);
+              const compareHref = buildSignalsHref({
+                region: selectedRegion,
+                stayType: selectedStayType,
+                q: currentQuery,
+                sort: currentSort,
+                preset: currentPreset,
+                compare: isCompared
+                  ? removeCompareSlug(currentCompare, stay.slug)
+                  : addCompareSlug(currentCompare, stay.slug),
+              });
+
+              return (
+                <FacilityCard
+                  key={stay.id}
+                  stay={stay}
+                  compareHref={compareHref}
+                  isCompared={isCompared}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <p className="empty-state">
+            No stays matched the current filter combination.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

@@ -1,0 +1,81 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { clearStoredValue, readStoredJson, writeStoredJson } from "../utils/browserStorage";
+
+type UseShortlistBrowserPersistenceArgs<TSelection, TLastRemoved> = {
+  selectionKey: string;
+  lastClearedKey: string;
+  lastRemovedKey: string;
+  selection: TSelection[];
+  setSelection: (value: TSelection[]) => void;
+  lastClearedSelection: TSelection[];
+  setLastClearedSelection: (value: TSelection[]) => void;
+  lastRemoved: TLastRemoved | null;
+  setLastRemoved: (value: TLastRemoved | null) => void;
+};
+
+export function useShortlistBrowserPersistence<TSelection, TLastRemoved = unknown>({
+  selectionKey,
+  lastClearedKey,
+  lastRemovedKey,
+  selection,
+  setSelection,
+  lastClearedSelection,
+  setLastClearedSelection,
+  lastRemoved,
+  setLastRemoved,
+}: UseShortlistBrowserPersistenceArgs<TSelection, TLastRemoved>): boolean {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const storedSelection = readStoredJson<TSelection[]>(selectionKey);
+    if (Array.isArray(storedSelection)) {
+      setSelection(storedSelection);
+    }
+
+    const storedLastCleared = readStoredJson<TSelection[]>(lastClearedKey);
+    if (Array.isArray(storedLastCleared)) {
+      setLastClearedSelection(storedLastCleared);
+    }
+
+    const storedLastRemoved = readStoredJson<TLastRemoved>(lastRemovedKey);
+    if (storedLastRemoved != null) {
+      setLastRemoved(storedLastRemoved);
+    }
+
+    setReady(true);
+  }, [lastClearedKey, lastRemovedKey, selectionKey, setLastClearedSelection, setLastRemoved, setSelection]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    if (Array.isArray(selection) && selection.length > 0) {
+      writeStoredJson(selectionKey, selection);
+    } else {
+      clearStoredValue(selectionKey);
+    }
+  }, [ready, selection, selectionKey]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    if (Array.isArray(lastClearedSelection) && lastClearedSelection.length > 0) {
+      writeStoredJson(lastClearedKey, lastClearedSelection);
+    } else {
+      clearStoredValue(lastClearedKey);
+    }
+  }, [lastClearedKey, lastClearedSelection, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    if (lastRemoved != null) {
+      writeStoredJson(lastRemovedKey, lastRemoved);
+    } else {
+      clearStoredValue(lastRemovedKey);
+    }
+  }, [lastRemoved, lastRemovedKey, ready]);
+
+  return ready;
+}

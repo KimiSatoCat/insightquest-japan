@@ -1,0 +1,32 @@
+export const SHORTLIST_SELECTION_LIMITS = {
+  finalMax: 2,
+  focusedMax: 4,
+} as const;
+
+export const SHORTLIST_SELECTION_COPY = {
+  priorityPairLabel: "Current priority pair",
+  persistentNote: "Selection, the most recently removed item, and the most recently cleared set are kept in this browser.",
+  finalPriorityHint: "Keep top 2 uses the current chip order as final priority.",
+  focusedPriorityHint: "Keep top 4 uses the current chip order as priority.",
+  compareButton: "Compare selected",
+  keepTop2: "Keep top 2",
+  keepTop4: "Keep top 4",
+  keepTop2Title: "Keep only the first 2 selected stays, based on the current priority order",
+  keepTop4Title: "Keep only the first 4 selected stays, based on the current priority order",
+  undoRemove: "Undo remove",
+  undoRemoveTitle: "Restore the most recently removed selection",
+  restoreCleared: "Restore cleared",
+  restoreClearedTitle: "Restore the most recently cleared selection",
+  copySelection: "Copy selection",
+  copied: "Copied",
+  copyFailed: "Copy failed",
+  copySelectionTitle: "Copy selected stays as text",
+  copyWithLinks: "Copy with links",
+  linksCopied: "Links copied",
+  copyWithLinksTitle: "Copy selected stays with detail links",
+  copyAsMarkdown: "Copy as Markdown",
+  markdownCopied: "Markdown copied",
+  copyAsMarkdownTitle: "Copy selected stays as Markdown",
+  clearSelection: "Clear selection",
+  confirmClear: "Confirm clear",
+} as const;

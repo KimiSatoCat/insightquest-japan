@@ -1,0 +1,335 @@
+import ShortlistSelectionBar from "./ShortlistSelectionBar";
+import { SHORTLIST_STORAGE_KEYS } from "../config/shortlistStorageKeys";
+import { getShortlistSelectionView } from "../utils/shortlistSelectionState";
+import { clearStoredValue, readStoredJson, writeStoredJson } from "../utils/browserStorage";
+"use client";
+import WorkflowStrip from "./WorkflowStrip";
+import { WORKFLOW_STRIP_PRESETS } from "../config/workflowStripPresets";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import type { StayRecord } from "../types";
+getRegionLabel, getStayTypeLabel } from "../lib/momentum";
+buildComparePageHref } from "../lib/selectors";
+useShortlistBrowserPersistence } from "@/features/signals/hooks/useShortlistBrowserPersistence";
+buildShortlistLinkText, buildShortlistMarkdownText, buildShortlistPlainText } from "@/features/signals/utils/shortlistCopy";
+keepTopSelectionItems, moveSelectionItem, removeSelectionItem, restoreClearedSelectionItems, restoreRemovedSelectionItem } from "@/features/signals/utils/shortlistSelectionActions";
+getShortlistSelectionKey, getShortlistSelectionLabel, resolveShortlistDisplayLabel, resolveShortlistHref } from "@/features/signals/utils/shortlistResolvers";
+  BOOKMARKS_EVENT,
+  readBookmarks,
+  removeBookmark,
+} from "./bookmarkStorage";
+readStayNotes,
+  STAY_NOTES_EVENT,
+  type StayNotesMap,
+} from "./stayNotesStorage";
+
+interface ShortlistBoardProps {
+  allStays: StayRecord[];
+}
+
+interface ShortlistItem {
+  stay: StayRecord;
+  bookmarked: boolean;
+  note: string;
+}
+
+function truncateText(value: string, limit = 180): string {
+  const normalized = value.trim();
+  if (normalized.length <= limit) {
+    return normalized;
+  }
+  return `${normalized.slice(0, limit)}…`;
+}
+
+export default function ShortlistBoard({ allStays }: ShortlistBoardProps) {
+  const [bookmarkSlugs, setBookmarkSlugs] = useState<string[]>([]);
+  const [notes, setNotes] = useState<StayNotesMap>({});
+  const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
+
+  const __iqSelectionView = getShortlistSelectionView({
+    selectedItems: Array.isArray(selectedSlugs) ? selectedSlugs : [],
+    resolveLabel: (item, index) =>
+      __iqResolveDisplayLabel(item) ||
+      __iqSelectionLabel(item) ||
+      `Selected stay ${index + 1}`,
+  });
+  const __iqSelectedCount = __iqSelectionView.selectedCount;
+  const __iqCanCompare = __iqSelectionView.canCompare;
+  const __iqSelectionMessage = __iqSelectionView.selectionMessage;
+  const __iqCompareFocusTone = __iqSelectionView.compareFocus.tone;
+  const __iqCompareFocusLabel = __iqSelectionView.compareFocus.label;
+  const __iqCompareFocusText = __iqSelectionView.compareFocus.text;
+  const __iqPriorityPairLabels = __iqSelectionView.priorityPairLabels;
+  const __iqHasPriorityPair = __iqSelectionView.hasPriorityPair;
+  const __iqSelectionStorageReady = useShortlistBrowserPersistence({
+    selectionKey: __iqSelectionStorageKey,
+    lastClearedKey: __iqLastClearedStorageKey,
+    lastRemovedKey: __iqLastRemovedStorageKey,
+    selection: Array.isArray(selectedSlugs) ? selectedSlugs : [],
+    setSelection: setSelectedSlugs,
+    lastClearedSelection: Array.isArray(__iqLastClearedSelection) ? __iqLastClearedSelection : [],
+    setLastClearedSelection: __iqSetLastClearedSelection,
+    lastRemoved: __iqLastRemoved,
+    setLastRemoved: __iqSetLastRemoved,
+  });
+  const __iqSelectionStorageKey = SHORTLIST_STORAGE_KEYS.selection;
+  const __iqLastClearedStorageKey = SHORTLIST_STORAGE_KEYS.lastCleared;
+  const __iqLastRemovedStorageKey = SHORTLIST_STORAGE_KEYS.lastRemoved;
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  useEffect(() => {
+    const sync = () => {
+      setBookmarkSlugs(readBookmarks());
+      setNotes(readStayNotes());
+    };
+
+    sync();
+    window.addEventListener(BOOKMARKS_EVENT, sync);
+    window.addEventListener(STAY_NOTES_EVENT, sync);
+    window.addEventListener("storage", sync);
+  const __iqCompareFocus = getCompareFocusMeta(__iqSelectedCount);
+
+return () => {
+      window.removeEventListener(BOOKMARKS_EVENT, sync);
+      window.removeEventListener(STAY_NOTES_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  const items = useMemo(() => {
+    const bySlug = new Map(allStays.map((stay) => [stay.slug, stay]));
+    const noteEntries = Object.entries(notes)
+      .filter(([, value]) => typeof value === "string" && value.trim().length > 0);
+
+    const slugSet = new Set<string>
+                  <WorkflowStrip {...WORKFLOW_STRIP_PRESETS.shortlist} />
+<ShortlistSelectionBar
+        selectedCount={__iqSelectedCount}
+        canCompare={__iqCanCompare}
+        selectionMessage={__iqSelectionMessage}
+        compareFocusTone={__iqCompareFocusTone}
+        compareFocusLabel={__iqCompareFocusLabel}
+        compareFocusText={__iqCompareFocusText}
+        hasPriorityPair={__iqHasPriorityPair}
+        priorityPairLabels={__iqPriorityPairLabels}
+        selectedItems={Array.isArray(selectedSlugs) ? selectedSlugs : []}
+        selectionKey={__iqSelectionKey}
+        resolveDisplayLabel={__iqResolveDisplayLabel}
+        resolveSelectionHref={__iqResolveSelectionHref}
+        moveSelectedItem={__iqMoveSelectedItem}
+        removeSelectedItem={__iqRemoveSelectedItem}
+        compareHref="/signals/compare"
+        lastRemoved={__iqLastRemoved}
+        onUndoRemove={__iqUndoRemove}
+        lastClearedSelectionCount={__iqLastClearedSelection.length}
+        onRestoreClearedSelection={__iqRestoreClearedSelection}
+        onCopySelectionSummary={__iqCopySelectionSummary}
+        onCopySelectionWithLinks={__iqCopySelectionWithLinks}
+        onCopySelectionAsMarkdown={__iqCopySelectionAsMarkdown}
+        copyFeedback={__iqCopyFeedback}
+        copyLinksFeedback={__iqCopyLinksFeedback}
+        copyMarkdownFeedback={__iqCopyMarkdownFeedback}
+        onKeepTopSelection={__iqKeepTopSelection}
+        clearArmed={__iqClearArmed}
+        onHandleClearSelectionClick={__iqHandleClearSelectionClick}
+      />
+([
+      ...bookmarkSlugs,
+      ...noteEntries.map(([slug]) => slug),
+    ]);
+
+    return [...slugSet]
+      .map((slug) => {
+        const stay = bySlug.get(slug);
+        if (!stay) return null;
+
+        return {
+          stay,
+          bookmarked: bookmarkSlugs.includes(slug),
+          note: notes[slug] ?? "",
+        };
+      })
+      .filter((item): item is ShortlistItem => Boolean(item))
+      .sort((a, b) => {
+        const aScore = Number(a.bookmarked) + Number(a.note.trim().length > 0);
+        const bScore = Number(b.bookmarked) + Number(b.note.trim().length > 0);
+
+        if (bScore !== aScore) {
+          return bScore - aScore;
+        }
+
+        return a.stay.name.localeCompare(b.stay.name);
+      });
+  }, [allStays, bookmarkSlugs, notes]);
+
+  useEffect(() => {
+    setSelectedSlugs((current) =>
+      current.filter((slug) => items.some((item) => item.stay.slug === slug))
+    );
+  }, [items]);
+
+  function toggleSelect(slug: string) {
+    setSelectedSlugs((current) => {
+      if (current.includes(slug)) {
+        return current.filter((item) => item !== slug);
+      }
+
+      if (current.length >= 4) {
+        return current;
+      }
+
+      return [...current, slug];
+    });
+  }
+
+  if (items.length === 0) {
+    return (
+      <section className="stay-not-found-shell">
+        <p className="stay-not-found-kicker">Shortlist</p>
+        <h1 className="stay-not-found-title">
+          There are no shortlisted stays yet.
+        </h1>
+        <p className="stay-not-found-text">
+          Save bookmarks or write notes on stay detail pages, then come back here
+          to review your real candidates in one place.
+        </p>
+
+        <div className="stay-not-found-actions">
+          <Link href="/signals" className="btn-primary">
+            Go to signals dashboard
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="shortlist-board">
+      <div className="shortlist-head">
+        <div>
+          <p className="section-kicker">Decision workspace</p>
+          <h1 className="shortlist-title">Shortlisted stays</h1>
+          <p className="shortlist-note">
+            This board merges bookmarked stays and stays with private notes so
+            you can compare your real candidates more easily.
+          </p>
+        </div>
+
+        <div className="shortlist-head-actions">
+          <Link
+            href={selectedSlugs.length >= 2 ? buildComparePageHref(selectedSlugs) : "#"}
+            className={`btn-primary${selectedSlugs.length >= 2 ? "" : " shortlist-button-disabled"}`}
+            aria-disabled={selectedSlugs.length >= 2 ? "false" : "true"}
+          >
+            Compare selected ({selectedSlugs.length})
+          </Link>
+
+          <Link href="/signals/bookmarks" className="btn-secondary">
+            Bookmarks
+          </Link>
+
+          <Link href="/signals/notes" className="btn-secondary">
+            Notes
+          </Link>
+        </div>
+      </div>
+
+      <div className="shortlist-grid">
+        {items.map(({ stay, bookmarked, note }) => {
+          const selected = selectedSlugs.includes(stay.slug);
+          const hasNote = note.trim().length > 0;
+
+          return (
+            <article
+              key={stay.id}
+              className="shortlist-card"
+              data-selected={selected}
+            >
+              <div className="shortlist-card-top">
+                <div>
+                  <p className="shortlist-meta">
+                    {getRegionLabel(stay.region)} / {stay.city} / {getStayTypeLabel(stay.stayType)}
+                  </p>
+                  <h2 className="shortlist-card-title">{stay.name}</h2>
+                </div>
+
+                <button
+                  type="button"
+                  className="shortlist-select-button"
+                  data-selected={selected}
+                  onClick={() => toggleSelect(stay.slug)}
+                >
+                  {selected ? "Selected" : "Select"}
+                </button>
+              </div>
+
+              <p className="shortlist-card-headline">{stay.headline}</p>
+
+              <div className="shortlist-chip-row">
+                {bookmarked ? (
+                  <span className="shortlist-chip shortlist-chip-strong">
+                    Bookmarked
+                  </span>
+                ) : null}
+
+                {hasNote ? (
+                  <span className="shortlist-chip">
+                    Has note
+                  </span>
+                ) : null}
+
+                <span className="shortlist-chip">
+                  Reviewed {stay.lastReviewedAt}
+                </span>
+              </div>
+
+              {hasNote ? (
+                <div className="shortlist-note-box">
+                  <p className="shortlist-note-text">{truncateText(note, 220)}</p>
+                </div>
+              ) : null}
+
+              <div className="shortlist-fit-row">
+                {stay.fitTags.map((tag) => (
+                  <span key={tag} className="bookmarks-chip">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+
+              <div className="shortlist-actions">
+                <Link href={`/signals/${stay.slug}`} className="bookmark-inline-link">
+                  Open detail
+                </Link>
+
+                {bookmarked ? (
+                  <button
+                    type="button"
+                    className="bookmark-inline-button"
+                    onClick={() => {
+                      removeBookmark(stay.slug);
+                      setBookmarkSlugs(readBookmarks());
+                    }}
+                  >
+                    Remove bookmark
+                  </button>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}

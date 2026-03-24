@@ -1,0 +1,292 @@
+"use client";
+
+import Link from "next/link";
+import { SIGNAL_ROUTES } from "@/features/signals/config/signalRoutes";
+import {
+  SHORTLIST_SELECTION_COPY,
+  SHORTLIST_SELECTION_LIMITS,
+} from "../config/shortlistSelectionMeta";
+
+type CopyFeedback = "idle" | "copied" | "error";
+
+type ShortlistSelectionBarProps = {
+  selectedCount: number;
+  canCompare: boolean;
+  selectionMessage: string;
+  compareFocusTone: string;
+  compareFocusLabel: string;
+  compareFocusText: string;
+  hasPriorityPair: boolean;
+  priorityPairLabels: string[];
+  selectedItems: unknown[];
+  selectionKey: (item: unknown) => string;
+  resolveDisplayLabel: (item: unknown) => string;
+  resolveSelectionHref: (item: unknown) => string | null;
+  moveSelectedItem: (item: unknown, direction: -1 | 1) => void;
+  removeSelectedItem: (item: unknown) => void;
+  onCompareSelected?: () => void;
+  compareHref?: string;
+  lastRemoved: unknown | null;
+  onUndoRemove: () => void;
+  lastClearedSelectionCount: number;
+  onRestoreClearedSelection: () => void;
+  onCopySelectionSummary: () => void;
+  onCopySelectionWithLinks: () => void;
+  onCopySelectionAsMarkdown: () => void;
+  copyFeedback: CopyFeedback;
+  copyLinksFeedback: CopyFeedback;
+  copyMarkdownFeedback: CopyFeedback;
+  onKeepTopSelection: (maxCount: number) => void;
+  clearArmed: boolean;
+  onHandleClearSelectionClick: () => void;
+};
+
+export default function ShortlistSelectionBar({
+  selectedCount,
+  canCompare,
+  selectionMessage,
+  compareFocusTone,
+  compareFocusLabel,
+  compareFocusText,
+  hasPriorityPair,
+  priorityPairLabels,
+  selectedItems,
+  selectionKey,
+  resolveDisplayLabel,
+  resolveSelectionHref,
+  moveSelectedItem,
+  removeSelectedItem,
+  onCompareSelected,
+  compareHref = SIGNAL_ROUTES.compare,
+  lastRemoved,
+  onUndoRemove,
+  lastClearedSelectionCount,
+  onRestoreClearedSelection,
+  onCopySelectionSummary,
+  onCopySelectionWithLinks,
+  onCopySelectionAsMarkdown,
+  copyFeedback,
+  copyLinksFeedback,
+  copyMarkdownFeedback,
+  onKeepTopSelection,
+  clearArmed,
+  onHandleClearSelectionClick,
+}: ShortlistSelectionBarProps) {
+  return (
+    <section className="iq-selection-status" aria-label="Shortlist selection status">
+      <div className="iq-selection-status__meta">
+        <div className="iq-selection-status__meta-top">
+          <div className="iq-selection-status__copy">
+            <p className="iq-selection-status__eyebrow">Selection status</p>
+            <p className={`iq-selection-status__signal is-${compareFocusTone}`}>{compareFocusLabel}</p>
+          </div>
+          {hasPriorityPair ? (
+            <div className="iq-selection-status__pair" aria-label="Priority compare pair">
+              <p className="iq-selection-status__pair-label">{SHORTLIST_SELECTION_COPY.priorityPairLabel}</p>
+              <div className="iq-selection-status__pair-items">
+                <span className="iq-selection-status__pair-item is-top">
+                  <span className="iq-selection-status__pair-rank">1</span>
+                  <span className="iq-selection-status__pair-name">{priorityPairLabels[0]}</span>
+                </span>
+                <span className="iq-selection-status__pair-separator" aria-hidden="true">vs</span>
+                <span className="iq-selection-status__pair-item is-second">
+                  <span className="iq-selection-status__pair-rank">2</span>
+                  <span className="iq-selection-status__pair-name">{priorityPairLabels[1]}</span>
+                </span>
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <p className="iq-selection-status__title">{selectionMessage}</p>
+        <p className="iq-selection-status__note">{SHORTLIST_SELECTION_COPY.persistentNote}</p>
+        <p className="iq-selection-status__hint">{compareFocusText}</p>
+        {selectedCount > SHORTLIST_SELECTION_LIMITS.finalMax ? (
+          <p className="iq-selection-status__microhint">{SHORTLIST_SELECTION_COPY.finalPriorityHint}</p>
+        ) : null}
+        {selectedCount > SHORTLIST_SELECTION_LIMITS.focusedMax ? (
+          <p className="iq-selection-status__microhint">{SHORTLIST_SELECTION_COPY.focusedPriorityHint}</p>
+        ) : null}
+        {selectedCount > 0 ? (
+          <div className="iq-selection-status__chips" aria-label="Selected stays">
+            {selectedItems.map((item, index) => {
+              const itemKey = selectionKey(item) || `selected-${index}`;
+              const itemLabel = resolveDisplayLabel(item) || `Selected stay ${index + 1}`;
+              const itemHref = resolveSelectionHref(item);
+
+              return (
+                <div key={itemKey} className="iq-selection-status__chip">
+                  <span className="iq-selection-status__chip-order" aria-hidden="true">{index + 1}</span>
+                  {itemHref ? (
+                    <Link
+                      href={itemHref}
+                      className="iq-selection-status__chip-link"
+                      title={`Open ${itemLabel} details`}
+                      aria-label={`Open ${itemLabel} details`}
+                    >
+                      <span className="iq-selection-status__chip-label" title={itemLabel}>{itemLabel}</span>
+                    </Link>
+                  ) : (
+                    <span className="iq-selection-status__chip-label" title={itemLabel}>{itemLabel}</span>
+                  )}
+                  <div className="iq-selection-status__chip-controls">
+                    <button
+                      type="button"
+                      className="iq-selection-status__chip-shift"
+                      onClick={() => moveSelectedItem(item, -1)}
+                      disabled={index === 0}
+                      title={`Move ${itemLabel} earlier in the selection`}
+                      aria-label={`Move ${itemLabel} earlier in the selection`}
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className="iq-selection-status__chip-shift"
+                      onClick={() => moveSelectedItem(item, 1)}
+                      disabled={index === selectedCount - 1}
+                      title={`Move ${itemLabel} later in the selection`}
+                      aria-label={`Move ${itemLabel} later in the selection`}
+                    >
+                      →
+                    </button>
+                    <button
+                      type="button"
+                      className="iq-selection-status__chip-remove"
+                      onClick={() => removeSelectedItem(item)}
+                      title={`Remove ${itemLabel} from selection`}
+                      aria-label={`Remove ${itemLabel} from selection`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+      <div className="iq-selection-status__actions">
+        {onCompareSelected ? (
+          <button
+            type="button"
+            className="iq-selection-status__cta"
+            onClick={onCompareSelected}
+            disabled={!canCompare}
+            aria-disabled={!canCompare}
+          >
+            {SHORTLIST_SELECTION_COPY.compareButton} ({selectedCount})
+          </button>
+        ) : (
+          <Link
+            href={compareHref}
+            className={`iq-selection-status__cta${canCompare ? "" : " is-disabled"}`}
+            aria-disabled={!canCompare}
+            onClick={(event) => {
+              if (!canCompare) event.preventDefault();
+            }}
+          >
+            {SHORTLIST_SELECTION_COPY.compareButton} ({selectedCount})
+          </Link>
+        )}
+        {selectedCount > SHORTLIST_SELECTION_LIMITS.focusedMax ? (
+          <button
+            type="button"
+            className="iq-selection-status__secondary iq-selection-status__trim"
+            onClick={() => onKeepTopSelection(SHORTLIST_SELECTION_LIMITS.focusedMax)}
+            title={SHORTLIST_SELECTION_COPY.keepTop4Title}
+            aria-label={SHORTLIST_SELECTION_COPY.keepTop4Title}
+          >
+            {SHORTLIST_SELECTION_COPY.keepTop4}
+          </button>
+        ) : null}
+        {selectedCount > SHORTLIST_SELECTION_LIMITS.finalMax ? (
+          <button
+            type="button"
+            className="iq-selection-status__secondary iq-selection-status__trim iq-selection-status__trim-tight"
+            onClick={() => onKeepTopSelection(SHORTLIST_SELECTION_LIMITS.finalMax)}
+            title={SHORTLIST_SELECTION_COPY.keepTop2Title}
+            aria-label={SHORTLIST_SELECTION_COPY.keepTop2Title}
+          >
+            {SHORTLIST_SELECTION_COPY.keepTop2}
+          </button>
+        ) : null}
+        {lastRemoved != null ? (
+          <button
+            type="button"
+            className="iq-selection-status__secondary iq-selection-status__undo"
+            onClick={onUndoRemove}
+            title={SHORTLIST_SELECTION_COPY.undoRemoveTitle}
+            aria-label={SHORTLIST_SELECTION_COPY.undoRemoveTitle}
+          >
+            {SHORTLIST_SELECTION_COPY.undoRemove}
+          </button>
+        ) : null}
+        {selectedCount === 0 && lastClearedSelectionCount > 0 ? (
+          <button
+            type="button"
+            className="iq-selection-status__secondary iq-selection-status__restore"
+            onClick={onRestoreClearedSelection}
+            title={SHORTLIST_SELECTION_COPY.restoreClearedTitle}
+            aria-label={SHORTLIST_SELECTION_COPY.restoreClearedTitle}
+          >
+            {SHORTLIST_SELECTION_COPY.restoreCleared} ({lastClearedSelectionCount})
+          </button>
+        ) : null}
+        {selectedCount > 0 ? (
+          <button
+            type="button"
+            className={`iq-selection-status__secondary iq-selection-status__copy${copyFeedback === "copied" ? " is-success" : copyFeedback === "error" ? " is-error" : ""}`}
+            onClick={onCopySelectionSummary}
+            title={SHORTLIST_SELECTION_COPY.copySelectionTitle}
+            aria-label={SHORTLIST_SELECTION_COPY.copySelectionTitle}
+          >
+            {copyFeedback === "copied"
+              ? SHORTLIST_SELECTION_COPY.copied
+              : copyFeedback === "error"
+                ? SHORTLIST_SELECTION_COPY.copyFailed
+                : SHORTLIST_SELECTION_COPY.copySelection}
+          </button>
+        ) : null}
+        {selectedCount > 0 ? (
+          <button
+            type="button"
+            className={`iq-selection-status__secondary iq-selection-status__copy-links${copyLinksFeedback === "copied" ? " is-success" : copyLinksFeedback === "error" ? " is-error" : ""}`}
+            onClick={onCopySelectionWithLinks}
+            title={SHORTLIST_SELECTION_COPY.copyWithLinksTitle}
+            aria-label={SHORTLIST_SELECTION_COPY.copyWithLinksTitle}
+          >
+            {copyLinksFeedback === "copied"
+              ? SHORTLIST_SELECTION_COPY.linksCopied
+              : copyLinksFeedback === "error"
+                ? SHORTLIST_SELECTION_COPY.copyFailed
+                : SHORTLIST_SELECTION_COPY.copyWithLinks}
+          </button>
+        ) : null}
+        {selectedCount > 0 ? (
+          <button
+            type="button"
+            className={`iq-selection-status__secondary iq-selection-status__copy-markdown${copyMarkdownFeedback === "copied" ? " is-success" : copyMarkdownFeedback === "error" ? " is-error" : ""}`}
+            onClick={onCopySelectionAsMarkdown}
+            title={SHORTLIST_SELECTION_COPY.copyAsMarkdownTitle}
+            aria-label={SHORTLIST_SELECTION_COPY.copyAsMarkdownTitle}
+          >
+            {copyMarkdownFeedback === "copied"
+              ? SHORTLIST_SELECTION_COPY.markdownCopied
+              : copyMarkdownFeedback === "error"
+                ? SHORTLIST_SELECTION_COPY.copyFailed
+                : SHORTLIST_SELECTION_COPY.copyAsMarkdown}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={`iq-selection-status__secondary iq-selection-status__clear${clearArmed ? " is-danger" : ""}`}
+          onClick={onHandleClearSelectionClick}
+          disabled={!selectedCount}
+          aria-disabled={!selectedCount}
+        >
+          {clearArmed ? SHORTLIST_SELECTION_COPY.confirmClear : SHORTLIST_SELECTION_COPY.clearSelection}
+        </button>
+      </div>
+    </section>
+  );
+}

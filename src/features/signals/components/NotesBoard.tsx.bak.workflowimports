@@ -1,0 +1,138 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import type { StayRecord } from "../types";
+import {
+import WorkflowStrip from "@/features/signals/components/WorkflowStrip";
+import { WORKFLOW_STRIP_PRESETS } from "@/features/signals/config/workflowStripPresets";
+  clearStayNotes,
+  deleteStayNote,
+  readStayNotes,
+  STAY_NOTES_EVENT,
+  type StayNotesMap,
+} from "./stayNotesStorage";
+import { getRegionLabel, getStayTypeLabel } from "../lib/momentum";
+
+interface NotesBoardProps {
+  allStays: StayRecord[];
+}
+
+export default function NotesBoard({ allStays }: NotesBoardProps) {
+  const [notes, setNotes] = useState<StayNotesMap>({});
+
+  useEffect(() => {
+    const sync = () => {
+      setNotes(readStayNotes());
+    };
+
+    sync();
+    window.addEventListener(STAY_NOTES_EVENT, sync);
+    window.addEventListener("storage", sync);
+
+    return () => {
+      window.removeEventListener(STAY_NOTES_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  const notedStays = useMemo(() => {
+    const bySlug = new Map(allStays.map((stay) => [stay.slug, stay]));
+    return Object.entries(notes)
+      .map(([slug, note]) => {
+        const stay = bySlug.get(slug);
+        if (!stay) return null;
+        return { stay, note };
+      })
+      .filter(
+        (item): item is { stay: StayRecord; note: string } => Boolean(item)
+      )
+      .sort((a, b) => a.stay.name.localeCompare(b.stay.name));
+  }, [allStays, notes]);
+
+  if (notedStays.length === 0) {
+    return (
+      <section className="stay-not-found-shell">
+                        <WorkflowStrip {...WORKFLOW_STRIP_PRESETS.notes} />
+
+        <p className="stay-not-found-kicker">Notes</p>
+        <h1 className="stay-not-found-title">
+          No local notes have been saved yet.
+        </h1>
+        <p className="stay-not-found-text">
+          Save a note from any stay detail page, then come back here to review
+          your own observations in one place.
+        </p>
+
+        <div className="stay-not-found-actions">
+          <Link href="/signals" className="btn-primary">
+            Go to signals dashboard
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="notes-board">
+      <div className="notes-board-head">
+        <div>
+          <p className="section-kicker">Saved locally</p>
+          <h1 className="notes-board-title">Private stay notes</h1>
+          <p className="notes-board-note">
+            These notes are stored only in this browser.
+          </p>
+        </div>
+
+        <div className="notes-board-actions">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              clearStayNotes();
+              setNotes({});
+            }}
+          >
+            Clear all notes
+          </button>
+        </div>
+      </div>
+
+      <div className="notes-grid">
+        {notedStays.map(({ stay, note }) => (
+          <article key={stay.id} className="notes-card">
+            <p className="notes-meta">
+              {getRegionLabel(stay.region)} / {stay.city} / {getStayTypeLabel(stay.stayType)}
+            </p>
+
+            <h2 className="notes-card-title">{stay.name}</h2>
+            <p className="notes-card-headline">{stay.headline}</p>
+
+            <div className="notes-text-block">
+              <p className="notes-text">{note}</p>
+            </div>
+
+            <div className="notes-actions">
+              <Link href={`/signals/${stay.slug}`} className="bookmark-inline-link">
+                Open detail
+              </Link>
+
+              <button
+                type="button"
+                className="bookmark-inline-button"
+                onClick={() => {
+                  const next = { ...notes };
+                  delete next[stay.slug];
+                  deleteStayNote(stay.slug);
+                  setNotes(next);
+                }}
+              >
+                Remove note
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}

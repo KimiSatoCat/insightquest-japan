@@ -1,0 +1,97 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import CompareMatrix from "../../../features/signals/components/CompareMatrix";
+import ShareViewBar from "../../../features/signals/components/ShareViewBar";
+import { getComparePageData } from "../../../features/signals/lib/repository";
+import { buildSignalsHref, normalizeCompareParam } from "../../../features/signals/lib/selectors";
+import WorkflowStrip from "@/features/signals/components/WorkflowStrip";
+
+export const metadata: Metadata = {
+  title: "Compare stays | Stay Signals",
+  description:
+    "Compare selected stays side by side across momentum, trust, fit, and profile details.",
+};
+
+type SearchParamsShape = {
+  slugs?: string | string[];
+};
+
+type PageProps = {
+  searchParams?: SearchParamsShape | Promise<SearchParamsShape>;
+};
+
+export default async function SignalsComparePage({ searchParams }: PageProps) {
+  const params = await Promise.resolve(searchParams ?? {});
+  const selectedSlugs = normalizeCompareParam(params.slugs);
+  const compareData = await getComparePageData(selectedSlugs);
+
+  return (
+    <div className="container">
+                  <WorkflowStrip
+        title="Refine candidates in Shortlist, then review them side by side here."
+        text="Shortlist is your active compare queue. Bookmarks and Notes remain useful for longer-term tracking and reconsideration."
+        className="iq-workflow-strip--compare"
+        links={[
+          { href: "/signals/shortlist", label: "Open shortlist", primary: true },
+          { href: "/signals/compare", label: "Compare" },
+          { href: "/signals/bookmarks", label: "Bookmarks" },
+          { href: "/signals/notes", label: "Notes" },
+        ]}
+        activeHref="/signals/compare"
+        copyLabel="Copy compare URL"
+      />
+
+      <section className="compare-page-shell">
+        <div className="stay-detail-breadcrumbs">
+          <Link href="/">Home</Link>
+          <span> / </span>
+          <Link href="/signals">Signals</Link>
+          <span> / </span>
+          <span>Compare</span>
+        </div>
+
+        {compareData.stays.length >= 2 ? (
+          <>
+            <div className="compare-page-toolbar">
+              <Link
+                href={buildSignalsHref({ compare: selectedSlugs })}
+                className="btn-secondary"
+              >
+                Back to dashboard
+              </Link>
+            </div>
+
+            <ShareViewBar
+              title="Share this comparison"
+              description="The copied URL preserves the currently selected comparison set."
+            />
+
+            <CompareMatrix
+              stays={compareData.stays}
+              leadName={compareData.lead?.name}
+              commonFitTags={compareData.commonFitTags}
+              summary={compareData.summary}
+            />
+          </>
+        ) : (
+          <section className="stay-not-found-shell">
+            <p className="stay-not-found-kicker">Compare</p>
+            <h1 className="stay-not-found-title">
+              Select at least two stays to compare.
+            </h1>
+            <p className="stay-not-found-text">
+              The compare page becomes useful when you send two or more selected
+              stays from the signals dashboard.
+            </p>
+
+            <div className="stay-not-found-actions">
+              <Link href="/signals" className="btn-primary">
+                Go to signals dashboard
+              </Link>
+            </div>
+          </section>
+        )}
+      </section>
+    </div>
+  );
+}

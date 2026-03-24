@@ -1,0 +1,117 @@
+import { SIGNAL_ROUTES } from "./signalRoutes";
+
+export const WORKFLOW_STRIP_PRESETS = {
+  dashboard: {
+    title: "Use the dashboard to scan the full landscape, then move the strongest options into shortlist for actual comparison.",
+    text: "Dashboard is the broad discovery layer. Shortlist remains the active compare queue, Compare is for side-by-side judgment, and Notes / Bookmarks help preserve decisions over time.",
+    className: "iq-workflow-strip--dashboard",
+    links: [
+      { href: SIGNAL_ROUTES.shortlist, label: "Open shortlist", primary: true },
+      { href: SIGNAL_ROUTES.compare, label: "Compare" },
+      { href: SIGNAL_ROUTES.bookmarks, label: "Bookmarks" },
+      { href: SIGNAL_ROUTES.notes, label: "Notes" },
+    ],
+    currentLabel: "Dashboard",
+    copyLabel: "Copy dashboard URL",
+  },
+
+  shortlist: {
+    title: "Use shortlist as the active compare queue, then move into compare when the decision set is ready.",
+    text: "Shortlist is where you refine priority order, trim the set, and preserve comparison intent. Dashboard helps discovery, while Bookmarks and Notes support longer-term reconsideration.",
+    className: "iq-workflow-strip--shortlist",
+    links: [
+      { href: SIGNAL_ROUTES.shortlist, label: "Shortlist" },
+      { href: SIGNAL_ROUTES.dashboard, label: "Dashboard", primary: true },
+      { href: SIGNAL_ROUTES.compare, label: "Compare" },
+      { href: SIGNAL_ROUTES.bookmarks, label: "Bookmarks" },
+      { href: SIGNAL_ROUTES.notes, label: "Notes" },
+    ],
+    activeHref: SIGNAL_ROUTES.shortlist,
+    copyLabel: "Copy shortlist URL",
+  },
+
+  compare: {
+    title: "Refine candidates in Shortlist, then review them side by side here.",
+    text: "Shortlist is your active compare queue. Bookmarks and Notes remain useful for longer-term tracking and reconsideration.",
+    className: "iq-workflow-strip--compare",
+    links: [
+      { href: SIGNAL_ROUTES.shortlist, label: "Open shortlist", primary: true },
+      { href: SIGNAL_ROUTES.dashboard, label: "Dashboard" },
+      { href: SIGNAL_ROUTES.compare, label: "Compare" },
+      { href: SIGNAL_ROUTES.bookmarks, label: "Bookmarks" },
+      { href: SIGNAL_ROUTES.notes, label: "Notes" },
+    ],
+    activeHref: SIGNAL_ROUTES.compare,
+    copyLabel: "Copy compare URL",
+  },
+
+  bookmarks: {
+    title: "Use bookmarks to hold stable candidates, then move back into shortlist when you are ready to compare.",
+    text: "Bookmarks work well for longer-term consideration. Shortlist remains the active compare queue, and Notes helps preserve reasons behind the choice.",
+    links: [
+      { href: SIGNAL_ROUTES.shortlist, label: "Open shortlist", primary: true },
+      { href: SIGNAL_ROUTES.dashboard, label: "Dashboard" },
+      { href: SIGNAL_ROUTES.compare, label: "Compare" },
+      { href: SIGNAL_ROUTES.bookmarks, label: "Bookmarks" },
+      { href: SIGNAL_ROUTES.notes, label: "Notes" },
+    ],
+    activeHref: SIGNAL_ROUTES.bookmarks,
+    copyLabel: "Copy page URL",
+  },
+
+  notes: {
+    title: "Use notes to capture why a stay matters, then return to shortlist when you are ready to compare.",
+    text: "Notes preserve rationale and edge cases. Shortlist remains the active compare queue, and Bookmarks is useful for candidates worth keeping in view over time.",
+    links: [
+      { href: SIGNAL_ROUTES.shortlist, label: "Open shortlist", primary: true },
+      { href: SIGNAL_ROUTES.dashboard, label: "Dashboard" },
+      { href: SIGNAL_ROUTES.compare, label: "Compare" },
+      { href: SIGNAL_ROUTES.bookmarks, label: "Bookmarks" },
+      { href: SIGNAL_ROUTES.notes, label: "Notes" },
+    ],
+    activeHref: SIGNAL_ROUTES.notes,
+    copyLabel: "Copy page URL",
+  },
+
+  updates: {
+    title: "Use updates to review what changed, then return to shortlist or compare when the decision set is clearer.",
+    text: "Updates help you understand movement and freshness. Shortlist remains the active compare queue, while Methodology clarifies how signals are constructed.",
+    links: [
+      { href: SIGNAL_ROUTES.shortlist, label: "Open shortlist", primary: true },
+      { href: SIGNAL_ROUTES.dashboard, label: "Dashboard" },
+      { href: SIGNAL_ROUTES.compare, label: "Compare" },
+      { href: SIGNAL_ROUTES.updates, label: "Updates" },
+      { href: SIGNAL_ROUTES.methodology, label: "Methodology" },
+    ],
+    activeHref: SIGNAL_ROUTES.updates,
+    copyLabel: "Copy page URL",
+  },
+
+  methodology: {
+    title: "Use methodology to understand the signals, then return to shortlist or compare for the actual decision.",
+    text: "Methodology explains how the editorial signals are assembled. Shortlist remains the active compare queue, and Updates helps you see what changed over time.",
+    links: [
+      { href: SIGNAL_ROUTES.shortlist, label: "Open shortlist", primary: true },
+      { href: SIGNAL_ROUTES.dashboard, label: "Dashboard" },
+      { href: SIGNAL_ROUTES.compare, label: "Compare" },
+      { href: SIGNAL_ROUTES.updates, label: "Updates" },
+      { href: SIGNAL_ROUTES.methodology, label: "Methodology" },
+    ],
+    activeHref: SIGNAL_ROUTES.methodology,
+    copyLabel: "Copy page URL",
+  },
+
+  detail: {
+    title: "Inspect this stay in detail, then return to shortlist or compare when you are ready to decide.",
+    text: "The detail page is for close reading. Shortlist remains the active compare queue, Compare is for side-by-side judgment, and Notes is where you preserve why this stay matters.",
+    className: "iq-workflow-strip--detail",
+    links: [
+      { href: SIGNAL_ROUTES.shortlist, label: "Open shortlist", primary: true },
+      { href: SIGNAL_ROUTES.dashboard, label: "Dashboard" },
+      { href: SIGNAL_ROUTES.compare, label: "Compare" },
+      { href: SIGNAL_ROUTES.notes, label: "Notes" },
+    ],
+    currentLabel: "Stay detail",
+    copyLabel: "Copy page URL",
+  },
+} as const;

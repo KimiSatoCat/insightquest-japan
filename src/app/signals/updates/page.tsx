@@ -1,0 +1,92 @@
+import WorkflowStrip from "../../../features/signals/components/WorkflowStrip";
+import { WORKFLOW_STRIP_PRESETS } from "../../../features/signals/config/workflowStripPresets";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { getRecentStayUpdates } from "../../../features/signals/lib/updates";
+import { REGION_LABELS, STAY_TYPE_LABELS } from "../../../features/signals/types";
+export const metadata: Metadata = {
+  title: "Recent updates | Stay Signals",
+  description:
+    "Recent editorial review updates across the Stay Signals dataset.",
+};
+
+export default async function SignalsUpdatesPage() {
+  const updates = await getRecentStayUpdates(30);
+
+  return (
+    <div className="container">
+                        <WorkflowStrip {...WORKFLOW_STRIP_PRESETS.updates} />
+
+      <section className="updates-shell">
+        <div className="stay-detail-breadcrumbs">
+          <Link href="/">Home</Link>
+          <span> / </span>
+          <Link href="/signals">Signals</Link>
+          <span> / </span>
+          <span>Updates</span>
+        </div>
+
+        <div className="admin-head">
+          <div>
+            <p className="section-kicker">Editorial log</p>
+            <h1 className="admin-title">Recent updates</h1>
+            <p className="admin-subtitle">
+              A running view of what was reviewed or revised across the current
+              Stay Signals dataset.
+            </p>
+          </div>
+
+          <div className="admin-head-actions">
+            <Link href="/signals" className="btn-secondary">
+              Back to dashboard
+            </Link>
+          </div>
+        </div>
+
+        {updates.length > 0 ? (
+          <div className="updates-list">
+            {updates.map((item, index) => (
+              <article
+                key={`${item.slug}-${item.date}-${index}`}
+                className="updates-item"
+              >
+                <div className="updates-item-top">
+                  <div>
+                    <p className="updates-date">{item.date}</p>
+                    <h2 className="updates-name">{item.name}</h2>
+                    <p className="updates-meta">
+                      {REGION_LABELS[item.region]} / {item.city} / {STAY_TYPE_LABELS[item.stayType]}
+                    </p>
+                  </div>
+
+                  <div className="updates-links">
+                    <Link href={`/signals/${item.slug}`} className="admin-inline-link">
+                      Open detail
+                    </Link>
+                  </div>
+                </div>
+
+                <p className="updates-change">{item.change}</p>
+
+                {item.editorNote ? (
+                  <p className="updates-note">{item.editorNote}</p>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <section className="stay-not-found-shell">
+            <p className="stay-not-found-kicker">Updates</p>
+            <h1 className="stay-not-found-title">
+              No review updates are available yet.
+            </h1>
+            <p className="stay-not-found-text">
+              Add reviewHistory entries in stays.json to surface recent editorial
+              changes here.
+            </p>
+          </section>
+        )}
+      </section>
+    </div>
+  );
+}
